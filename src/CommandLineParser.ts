@@ -16,6 +16,12 @@ export const argv: any = yargs.options({
         describe: 'The username used to log into Microsoft Stream (enabling this will fill in the email field for you).',
         demandOption: false
     },
+    password: {
+        alias: 'p',
+        type: 'string',
+        describe: 'The password used to log into ČVUT',
+        demandOption: false
+    },
     videoUrls: {
         alias: 'i',
         describe: 'List of urls to videos or Microsoft Stream groups.',
@@ -215,3 +221,4 @@ export function promptUser(choices: Array<string>): number {
 
     return index;
 }
+

@@ -44,7 +44,7 @@ async function init(): Promise<void> {
 }
 
 
-async function DoInteractiveLogin(url: string, username?: string): Promise<Session> {
+async function DoInteractiveLogin(url: string, username?: string, password?: string): Promise<Session> {
 
     logger.info('Launching headless Chrome to perform the OpenID Connect dance...');
 
@@ -68,6 +68,17 @@ async function DoInteractiveLogin(url: string, username?: string): Promise<Sessi
             await page.waitForSelector('input[type="email"]', {timeout: 3000});
             await page.keyboard.type(username);
             await page.click('input[type="submit"]');
+            
+            if (password) {
+		        await browser.waitForTarget((target: puppeteer.Target) => target.url().startsWith('https://logon.ms.cvut.cz'), { timeout: 15000 });
+		        await page.waitForSelector('input[type="password"]', { timeout: 3000 });
+		        await page.keyboard.type(password);
+		        await page.click('#submitButton');
+
+		        await browser.waitForTarget((target: puppeteer.Target) => target.url().startsWith("https://login.microsoftonline.com/"), { timeout: 15000 });
+		        await page.waitForSelector('input[type="submit"]', { timeout: 3000 });
+		        await page.click('input[type="submit"]');
+		    }
         }
         else {
             /* If a username was not provided we let the user take actions that
@@ -75,6 +86,8 @@ async function DoInteractiveLogin(url: string, username?: string): Promise<Sessi
         }
     }
     catch (e) {
+    	console.error("Autofill error");
+    	console.error(e);
         /* If there is no email input selector we aren't in the login module,
         we are probably using the cache to aid the login.
         It could finish the login on its own if the user said 'yes' when asked to
@@ -271,7 +284,7 @@ async function main(): Promise<void> {
 
     let session: Session;
     // eslint-disable-next-line prefer-const
-    session = tokenCache.Read() ?? await DoInteractiveLogin('https://web.microsoftstream.com/', argv.username);
+    session = tokenCache.Read() ?? await DoInteractiveLogin('https://web.microsoftstream.com/', argv.username, argv.password);
 
     logger.verbose('Session and API info \n' +
         '\t API Gateway URL: '.cyan + session.ApiGatewayUri + '\n' +
@@ -299,3 +312,4 @@ async function main(): Promise<void> {
 
 
 main();
+
