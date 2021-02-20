@@ -50,7 +50,7 @@ async function DoInteractiveLogin(url: string, username?: string, password?: str
 
     const browser: puppeteer.Browser = await puppeteer.launch({
         executablePath: getPuppeteerChromiumPath(),
-        headless: false,
+        headless: true,
         userDataDir: (argv.keepLoginCookies) ? chromeCacheFolder : undefined,
         args: [
             '--disable-dev-shm-usage',
