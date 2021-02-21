@@ -56,6 +56,12 @@ export const argv: any = yargs.options({
         default: false,
         demandOption: false
     },
+    chromeDataFolder: {
+        alias: 'c',
+        describe: 'Chromium cache folder. Used in combination with --keepLoginCookies.',
+        type: 'string',
+        default: '.chrome_data'
+    },
     noExperiments: {
         alias: 'x',
         describe: 'Do not attempt to render video thumbnails in the console.',

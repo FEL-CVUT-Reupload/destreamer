@@ -18,7 +18,6 @@ import { ApiClient } from './ApiClient';
 
 const { FFmpegCommand, FFmpegInput, FFmpegOutput } = require('@tedconf/fessonia')();
 const tokenCache: TokenCache = new TokenCache();
-export const chromeCacheFolder = '.chrome_data';
 
 
 async function init(): Promise<void> {
@@ -51,7 +50,7 @@ async function DoInteractiveLogin(url: string, username?: string, password?: str
     const browser: puppeteer.Browser = await puppeteer.launch({
         executablePath: getPuppeteerChromiumPath(),
         headless: true,
-        userDataDir: (argv.keepLoginCookies) ? chromeCacheFolder : undefined,
+        userDataDir: (argv.keepLoginCookies) ? argv.chromeDataFolder : undefined,
         args: [
             '--disable-dev-shm-usage',
             '--fast-start',
@@ -62,39 +61,32 @@ async function DoInteractiveLogin(url: string, username?: string, password?: str
 
     logger.info('Navigating to login page...');
     await page.goto(url, { waitUntil: 'load' });
+    
+    if(page.url().startsWith('https://login.microsoftonline.com')) {
+        try {
+            if(!username || !password)
+                throw new Error('Invalid login credentials');
 
-    try {
-        if (username) {
             await page.waitForSelector('input[type="email"]', { timeout: 3000 });
             await page.keyboard.type(username);
             await page.click('input[type="submit"]');
 
-            if (password) {
-                await browser.waitForTarget((target: puppeteer.Target) => target.url().startsWith('https://logon.ms.cvut.cz'), { timeout: 15000 });
-                await page.waitForSelector('input[type="password"]', { timeout: 3000 });
-                await page.keyboard.type(password);
-                await page.click('#submitButton');
+            await browser.waitForTarget((target: puppeteer.Target) => target.url().startsWith('https://logon.ms.cvut.cz'), { timeout: 15000 });
+            await page.waitForSelector('input[type="password"]', { timeout: 3000 });
+            await page.keyboard.type(password);
+            await page.click('#submitButton');
 
-                await browser.waitForTarget((target: puppeteer.Target) => target.url().startsWith('https://login.microsoftonline.com/'), { timeout: 15000 });
-                await page.waitForSelector('input[type="submit"]', { timeout: 3000 });
-                await page.click('input[type="submit"]');
-            }
+            await browser.waitForTarget((target: puppeteer.Target) => target.url().startsWith('https://login.microsoftonline.com/'), { timeout: 15000 });
+            await page.waitForSelector('input[type="submit"]', { timeout: 3000 });
+            await page.click('input[type="submit"]');
         }
-        else {
-            /* If a username was not provided we let the user take actions that
-            lead up to the video page. */
+        catch (e) {
+            logger.error("Invalid login");
+            process.exit(ERROR_CODE.NO_SESSION_INFO);
         }
     }
-    catch (e) {
-        console.error('Autofill error');
-        console.error(e);
-        /* If there is no email input selector we aren't in the login module,
-        we are probably using the cache to aid the login.
-        It could finish the login on its own if the user said 'yes' when asked to
-        remember the credentials or it could still prompt the user for a password */
-    }
 
-    await browser.waitForTarget((target: puppeteer.Target) => target.url().endsWith('microsoftstream.com/'), { timeout: 150000 });
+    await browser.waitForTarget((target: puppeteer.Target) => target.url().endsWith('microsoftstream.com/'), { timeout: 15000 });
     logger.info('We are logged in.');
 
     let session: Session | null = null;
