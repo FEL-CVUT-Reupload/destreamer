@@ -61,13 +61,14 @@ async function DoInteractiveLogin(url: string, username?: string, password?: str
 
     logger.info('Navigating to login page...');
     await page.goto(url, { waitUntil: 'load' });
-    
-    if(page.url().startsWith('https://login.microsoftonline.com')) {
+
+    try {
+        await page.waitForSelector('input[type="email"]', { timeout: 3000 });
+
         try {
-            if(!username || !password)
+            if (!username || !password)
                 throw new Error('Invalid login credentials');
 
-            await page.waitForSelector('input[type="email"]', { timeout: 3000 });
             await page.keyboard.type(username);
             await page.click('input[type="submit"]');
 
@@ -84,6 +85,8 @@ async function DoInteractiveLogin(url: string, username?: string, password?: str
             logger.error("Invalid login");
             process.exit(ERROR_CODE.NO_SESSION_INFO);
         }
+    } catch (e) {
+        logger.info('Login skipped');
     }
 
     await browser.waitForTarget((target: puppeteer.Target) => target.url().endsWith('microsoftstream.com/'), { timeout: 15000 });
